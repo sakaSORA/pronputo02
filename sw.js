@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-v2'; // 更新時はここを変更
+const CACHE_NAME = 'app-v3'; // 更新時はここを変更
 const ASSETS = [
   './index.html',
   './manifest.json',

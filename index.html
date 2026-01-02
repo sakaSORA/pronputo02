@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Prompt Builder PWA</title>
+    <title>Video Prompt Builder Pro+</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-512.png">
     <meta name="theme-color" content="#3498db">
@@ -13,46 +13,56 @@
     <style>
         :root {
             --primary: #2c3e50;
-            --accent: #3498db;
-            --danger: #e74c3c;
-            --success: #27ae60;
-            --bg: #f2f2f7;
+            --accent: #007aff;
+            --danger: #ff3b30;
+            --bg: #d1d1d6; 
             --card: #ffffff;
-            --text: #333;
+            
+            /* パステルカラー定義（5色） */
+            --color-speed: #e3f2fd;   /* 青 */
+            --color-sharp: #fff3e0;   /* 橙 */
+            --color-action: #e8f5e9;  /* 緑 */
+            --color-body: #f3e5f5;    /* 紫 */
+            --color-camera: #fce4ec;  /* 桃 */
         }
 
         body {
             font-family: -apple-system, "Helvetica Neue", "Hiragino Kaku Gothic ProN", sans-serif;
             background-color: var(--bg);
-            color: var(--text);
+            color: var(--primary);
             margin: 0;
-            padding: 10px;
-            padding-bottom: 180px; /* フッター高さを考慮 */
+            padding: 0;
+            padding-bottom: 200px;
         }
 
+        /* 固定ヘッダー */
         .header {
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding: 0 5px;
+            border-bottom: 1px solid #bbb;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        h1 { font-size: 1rem; margin: 0; color: var(--primary); }
+        h1 { font-size: 0.9rem; margin: 0; }
 
-        .control-btns {
-            display: flex;
-            gap: 5px;
-        }
-
+        .control-btns { display: flex; gap: 8px; }
         .btn-small {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             padding: 6px 10px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #ccc;
             background: white;
-            cursor: pointer;
+            font-weight: bold;
         }
+
+        .container { padding: 10px; }
 
         .section {
             background: var(--card);
@@ -65,18 +75,19 @@
         .section-title {
             font-weight: bold;
             font-size: 0.85rem;
-            color: var(--primary);
-            border-left: 4px solid var(--accent);
-            padding-left: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin-bottom: 5px;
         }
+
+        /* カテゴリー別の背景色 */
+        .cat-speed { background-color: var(--color-speed); border: 1px solid #bbdefb; }
+        .cat-sharp { background-color: var(--color-sharp); border: 1px solid #ffe0b2; }
+        .cat-action { background-color: var(--color-action); border: 1px solid #c8e6c9; }
+        .cat-body { background-color: var(--color-body); border: 1px solid #e1bee7; }
+        .cat-camera { background-color: var(--color-camera); border: 1px solid #f8bbd0; }
 
         textarea {
             width: 100%;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             border-radius: 8px;
             padding: 10px;
             font-size: 1rem;
@@ -84,129 +95,106 @@
             background: #fff;
         }
 
-        /* ネガティブプロンプト用トグルスイッチ */
         .toggle-container {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--danger);
-            background: #fff5f5;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #feb2b2;
             margin-bottom: 10px;
+            font-weight: bold;
         }
 
         .tag-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
+            gap: 8px;
             margin-top: 10px;
         }
 
         .tag {
             background: #fff;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 8px 4px;
-            font-size: 0.75rem;
-            text-align: center;
+            border-radius: 10px;
+            padding: 10px 5px;
             cursor: pointer;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 46px;
+            min-height: 55px;
             transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
+
+        .tag .main-label { font-size: 0.75rem; font-weight: bold; margin-bottom: 2px; text-align: center; }
+        .tag .sub-label { font-size: 0.6rem; color: #666; text-align: center; }
 
         .tag.selected {
-            background: var(--accent);
-            color: white;
+            background: var(--accent) !important;
             border-color: var(--accent);
-            font-weight: bold;
+            color: white;
         }
+        .tag.selected .sub-label { color: #eee; }
 
+        /* フッターエリア */
         .footer {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
             padding: 12px;
             box-shadow: 0 -3px 15px rgba(0,0,0,0.1);
             z-index: 1000;
         }
 
         .preview {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #444;
             margin-bottom: 10px;
-            max-height: 60px;
+            max-height: 80px;
             overflow-y: auto;
-            word-break: break-all;
             background: #fdfdfd;
             padding: 8px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px dashed var(--accent);
         }
 
-        .action-btns {
-            display: grid;
-            grid-template-columns: 1fr 2.5fr;
-            gap: 12px;
-        }
-
-        .btn-reset {
-            background: #fff;
-            color: var(--danger);
-            border: 2px solid var(--danger);
-            border-radius: 10px;
-            font-weight: bold;
-        }
-
-        .btn-main {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 1rem;
-        }
+        .action-btns { display: grid; grid-template-columns: 1fr 2.5fr; gap: 12px; }
+        .btn-reset { background: #fff; color: var(--danger); border: 2px solid var(--danger); border-radius: 10px; font-weight: bold; }
+        .btn-main { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1rem; }
 
         details summary { font-size: 0.85rem; padding: 5px 0; outline: none; cursor: pointer; }
-        .history-item { font-size: 0.75rem; background: #e9e9eb; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-reuse { background: #7f8c8d; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Prompt Builder + Body Protect</h1>
+        <h1>Video Prompt Pro Builder</h1>
         <div class="control-btns">
             <button class="btn-small" onclick="toggleDetails(true)">展開</button>
             <button class="btn-small" onclick="toggleDetails(false)">格納</button>
         </div>
     </div>
 
-    <div class="section" style="padding: 10px;">
-        <label class="toggle-container">
-            <input type="checkbox" id="negToggle" checked onchange="renderPreview()">
-            <span>人体保護（ネガティブプロンプト自動挿入）</span>
-        </label>
-        <div class="section-title" style="border:none; padding:0; margin:0; font-size:0.8rem;">1. キャラクター & 基本動作</div>
-        <textarea id="charInput" rows="2" placeholder="例: Kaede-chan, sprinting on the track..."></textarea>
-    </div>
+    <div class="container">
+        <div class="section">
+            <label class="toggle-container">
+                <input type="checkbox" id="negToggle" checked onchange="renderPreview()">
+                <span>人体保護プロンプトを自動挿入</span>
+            </label>
+            <div class="section-title">1. キャラクター & 基本動作</div>
+            <textarea id="charInput" rows="2" placeholder="例: Kaede-chan, sprinting on the track..."></textarea>
+        </div>
 
-    <div id="appBody"></div>
+        <div id="appBody"></div>
 
-    <div class="section">
-        <details>
-            <summary>履歴 (最新5件)</summary>
-            <div id="historyList" style="margin-top:10px;"></div>
-        </details>
+        <div class="section">
+            <details>
+                <summary>履歴 (最新5件)</summary>
+                <div id="historyList" style="margin-top:10px;"></div>
+            </details>
+        </div>
     </div>
 
     <div class="footer">
@@ -221,130 +209,162 @@
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW OK')).catch(err => console.log('SW ERR'));
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW ERR'));
     });
 }
 
-// 人体保護用ネガティブプロンプト
 const NEGATIVE_PROMPT = "### Negative Prompt ###\ndeformed, extra limbs, bad anatomy, missing fingers, malformed hands, floating limbs, disconnected limbs, mutation, gross proportions, mutated hands, blurry, low quality, distorted body, unrealistic movement, glitch, morphing.";
 
 const dictionary = [
     {
-        category: "2. 速度と勢い (Speed & Momentum)",
+        category: "2. 速度と勢い (Speed)",
+        class: "cat-speed",
         items: [
-            { jp: "爆発的ダッシュ", en: "Explosive sprint" },
-            { jp: "超高速の疾走", en: "High-velocity dash" },
-            { jp: "音速に近い動き", en: "Supersonic movement" },
-            { jp: "光の残像", en: "Motion blur streaks" },
-            { jp: "風を切る動作", en: "Wind-cutting action" },
-            { jp: "全開の勢い", en: "Full throttle momentum" },
-            { jp: "動的な加速", en: "Dynamic acceleration" },
-            { jp: "瞬間的なスピード", en: "Burst of speed" },
-            { jp: "燃えるような速さ", en: "Blazing fast pace" },
-            { jp: "エネルギー放出", en: "Kinetic energy discharge" },
-            { jp: "空気抵抗抑制", en: "Aerodynamic posture" },
-            { jp: "画面を横切る疾走", en: "Sprinting through the frame" },
-            { jp: "追いかける残像", en: "Trailing afterimages" },
-            { jp: "高速の追跡", en: "High-speed pursuit" },
-            { jp: "土煙を上げる", en: "Dust-kicking takeoff" },
-            { jp: "背景が流れる", en: "Blurred background transition" },
-            { jp: "容赦ない前進", en: "Relentless forward drive" },
-            { jp: "一瞬でトップ速", en: "Instant velocity" },
-            { jp: "弾丸のような軌道", en: "Bullet-like trajectory" },
-            { jp: "激しいピッチ", en: "Rapid strides" }
+            { jp: "爆発的ダッシュ", desc: "瞬発的な加速", en: "Explosive sprint" },
+            { jp: "超高速の疾走", desc: "最高速の維持", en: "High-velocity dash" },
+            { jp: "音速に近い動き", desc: "限界突破の速度", en: "Supersonic movement" },
+            { jp: "光の残像", desc: "速度によるブレ", en: "Motion blur streaks" },
+            { jp: "風を切る動作", desc: "空気抵抗の描写", en: "Wind-cutting action" },
+            { jp: "全開の勢い", desc: "パワー全開の突進", en: "Full throttle momentum" },
+            { jp: "動的な加速", desc: "滑らかな速度上昇", en: "Dynamic acceleration" },
+            { jp: "瞬間的な加速", desc: "一瞬の抜き去り", en: "Burst of speed" },
+            { jp: "猛烈なペース", desc: "圧倒的な速度感", en: "Blazing fast pace" },
+            { jp: "エネルギー放出", desc: "力の視覚化", en: "Kinetic energy discharge" },
+            { jp: "空気抵抗抑制", desc: "低い前傾姿勢", en: "Aerodynamic posture" },
+            { jp: "画面を横切る疾走", desc: "横方向のスピード", en: "Sprinting through the frame" },
+            { jp: "追いかける残像", desc: "分身のような残像", en: "Trailing afterimages" },
+            { jp: "高速の追跡", desc: "執拗な追い上げ", en: "High-speed pursuit" },
+            { jp: "土煙を上げる", desc: "力強い蹴り出し", en: "Dust-kicking takeoff" },
+            { jp: "背景が流れる", desc: "背景のスピード線", en: "Blurred background transition" },
+            { jp: "容赦ない前進", desc: "止まらない推進力", en: "Relentless forward drive" },
+            { jp: "一瞬でトップ速", desc: "加速時間の省略", en: "Instant velocity" },
+            { jp: "弾丸のような軌道", desc: "直線的な突進", en: "Bullet-like trajectory" },
+            { jp: "激しいピッチ", desc: "細かい足の回転", en: "Rapid strides" }
         ]
     },
     {
-        category: "3. キレ・反動・メリハリ (Sharpness)",
+        category: "3. キレ・反動 (Sharpness)",
+        class: "cat-sharp",
         items: [
-            { jp: "ピタッと止まる", en: "Sharp snap-to-stop" },
-            { jp: "弾力のある反動", en: "Elastic recoil" },
-            { jp: "鞭のようなしなり", en: "Whip-like snapping" },
-            { jp: "キレのあるリズム", en: "Crisp and rhythmic" },
-            { jp: "バネの溜めと解放", en: "Spring-loaded tension" },
-            { jp: "重みのある着地", en: "Heavy impact landing" },
-            { jp: "無重力の軽やかさ", en: "Weightless floatation" },
-            { jp: "急激な方向転換", en: "Abrupt directional change" },
-            { jp: "活き活きした跳ね返り", en: "Vibrant bounce-back" },
-            { jp: "正確なストップ", en: "Pop-and-lock precision" },
-            { jp: "慣性による揺れ", en: "Inertia-driven sway" },
-            { jp: "ブレない体幹", en: "Rigid posture control" },
-            { jp: "流から静への転換", en: "Fluid to rigid transition" },
-            { jp: "反動を利用した動き", en: "Counter-movement" },
-            { jp: "優雅で機敏な動き", en: "Graceful agility" },
-            { jp: "力強いリバウンド", en: "Powerful rebound" },
-            { jp: "関節のキレ", en: "Snappy joint articulation" },
-            { jp: "意図的な重い足取り", en: "Deliberate heavy steps" },
-            { jp: "羽のような軽い足運び", en: "Feather-light footwork" },
-            { jp: "筋肉の収縮", en: "Tense muscle contraction" }
+            { jp: "ピタッと止まる", desc: "完全な静止効果", en: "Sharp snap-to-stop" },
+            { jp: "弾力のある反動", desc: "着地後の弾み", en: "Elastic recoil" },
+            { jp: "鞭のようなしなり", desc: "柔軟な体使い", en: "Whip-like snapping" },
+            { jp: "キレのあるリズム", desc: "正確な動きの間隔", en: "Crisp and rhythmic" },
+            { jp: "バネの溜め・解放", desc: "跳躍前の緊張感", en: "Spring-loaded tension" },
+            { jp: "重みのある着地", desc: "衝撃の伝達", en: "Heavy impact landing" },
+            { jp: "無重力の軽やかさ", desc: "重力を感じさせない", en: "Weightless floatation" },
+            { jp: "急激な方向転換", desc: "鋭い切り返し", en: "Abrupt directional change" },
+            { jp: "活き活きした跳ね", desc: "軽快なステップ", en: "Vibrant bounce-back" },
+            { jp: "正確なストップ", desc: "正確な動作の静止", en: "Pop-and-lock precision" },
+            { jp: "慣性による揺れ", desc: "止まった後の揺れ", en: "Inertia-driven sway" },
+            { jp: "ブレない体幹", desc: "安定した重心", en: "Rigid posture control" },
+            { jp: "流から静への転換", desc: "緩急のメリハリ", en: "Fluid to rigid transition" },
+            { jp: "反動を利用", desc: "逆への予備動作", en: "Counter-movement" },
+            { jp: "優雅で機敏", desc: "美しさと速さ", en: "Graceful agility" },
+            { jp: "力強いリバウンド", desc: "強力な反作用", en: "Powerful rebound" },
+            { jp: "関節のキレ", desc: "手足の鋭い動き", en: "Snappy joint articulation" },
+            { jp: "意図的な重い歩", desc: "威圧感ある歩行", en: "Deliberate heavy steps" },
+            { jp: "羽のような足運び", desc: "音のない移動", en: "Feather-light footwork" },
+            { jp: "筋肉の収縮", desc: "力のこもった描写", en: "Tense muscle contraction" }
         ]
     },
     {
-        category: "4. アクションと駆け引き (Action)",
+        category: "4. アクション (Action)",
+        class: "cat-action",
         items: [
-            { jp: "閃光の反射神経", en: "Flash-like reflexes" },
-            { jp: "電光石火の攻撃", en: "Lightning-fast jabs" },
-            { jp: "潜り込む回避", en: "Dodge and weave" },
-            { jp: "緩急(スロー〜倍速)", en: "Slow-motion to fast-forward" },
-            { jp: "無駄のない動き", en: "Tactical maneuver" },
-            { jp: "壁を蹴る加速", en: "Wall-kick propulsion" },
-            { jp: "空中姿勢制御", en: "Mid-air flip adjustment" },
-            { jp: "爆発的な跳躍", en: "Explosive vaulting" },
-            { jp: "シャドーのリズム", en: "Shadow-boxing rhythm" },
-            { jp: "完璧な回避", en: "Frame-perfect evasion" },
-            { jp: "連続攻撃", en: "Rapid-fire strikes" },
-            { jp: "流れる一連の動作", en: "Flow-state movement" },
-            { jp: "着地ロール移行", en: "Precise landing roll" },
-            { jp: "静止からの始動", en: "High-tension standoff" },
-            { jp: "予測不能フェイント", en: "Unpredictable feint" },
-            { jp: "障害物を越える", en: "Vaulting over obstacles" },
-            { jp: "勢いある登坂", en: "Climbing with momentum" },
-            { jp: "瞬発的な敏捷性", en: "Short-burst agility" },
-            { jp: "カウンター反応", en: "Reaction-based counter" },
-            { jp: "パルクールの流れ", en: "Dynamic parkour flow" }
+            { jp: "閃光の反射神経", desc: "超人的な反応", en: "Flash-like reflexes" },
+            { jp: "電光石火の攻撃", desc: "見えない速さ", en: "Lightning-fast jabs" },
+            { jp: "潜り込む回避", desc: "低い姿勢の避け", en: "Dodge and weave" },
+            { jp: "緩急スロー効果", desc: "時間操作風の演出", en: "Slow-motion to fast-forward" },
+            { jp: "無駄のない動き", desc: "最短距離の動作", en: "Tactical maneuver" },
+            { jp: "壁を蹴る加速", desc: "三次元的な移動", en: "Wall-kick propulsion" },
+            { jp: "空中姿勢制御", desc: "空中でのバランス", en: "Mid-air flip adjustment" },
+            { jp: "爆発的な跳躍", desc: "高いジャンプ力", en: "Explosive vaulting" },
+            { jp: "シャドーのリズム", desc: "流れるような演武", en: "Shadow-boxing rhythm" },
+            { jp: "完璧な回避", desc: "紙一重の避け", en: "Frame-perfect evasion" },
+            { jp: "連続攻撃", desc: "休みのない連撃", en: "Rapid-fire strikes" },
+            { jp: "流れる一連動作", desc: "滑らかなコンボ", en: "Flow-state movement" },
+            { jp: "着地ロール", desc: "衝撃を逃がす回転", en: "Precise landing roll" },
+            { jp: "静止からの始動", desc: "緊迫した立ち上がり", en: "High-tension standoff" },
+            { jp: "予測不能フェイント", desc: "惑わせる動き", en: "Unpredictable feint" },
+            { jp: "障害物を越える", desc: "軽快な飛び越え", en: "Vaulting over obstacles" },
+            { jp: "勢いある登坂", desc: "駆け上がる動き", en: "Climbing with momentum" },
+            { jp: "瞬発的な敏捷性", desc: "小回りの利く動き", en: "Short-burst agility" },
+            { jp: "カウンター反応", desc: "後の先の動き", en: "Reaction-based counter" },
+            { jp: "パルクールの流れ", desc: "都会的な疾走", en: "Dynamic parkour flow" }
         ]
     },
     {
-        category: "5. 身体部位 & 演出 (Details & Camera)",
+        category: "5. 身体詳細 (Body Details)",
+        class: "cat-body",
         items: [
-            { jp: "力強い腕振り", en: "Powerful arm swing" },
-            { jp: "肘の激しい前後", en: "Pumping elbows back and forth" },
-            { jp: "指先まで意識", en: "Extended fingertips" },
-            { jp: "高い膝上げ", en: "High knee lift" },
-            { jp: "力強い蹴り出し", en: "Powerful leg drive" },
-            { jp: "膝での衝撃吸収", en: "Soft landing absorption" },
-            { jp: "深い腰の回転", en: "Deep hip rotation" },
-            { jp: "強い前傾姿勢", en: "Lean forward into the wind" },
-            { jp: "ブレない体幹の軸", en: "Stable core focus" },
-            { jp: "リズミカルな呼吸", en: "Rhythmic breathing" },
-            { jp: "鋭い視線の固定", en: "Intense focused gaze" },
-            { jp: "浮き出る筋肉のライン", en: "Defined muscle definition" },
-            { jp: "光る汗の飛散", en: "Scattering sweat droplets" },
-            { jp: "なびく髪の動き", en: "Flowing hair motion" },
-            { jp: "服のはためき", en: "Flapping clothes" },
-            { jp: "ローアングル追従", en: "Low angle tracking shot" },
-            { jp: "臨場感ある揺れ", en: "Dynamic camera shakes" },
-            { jp: "滑らかなスロー", en: "High frame rate feel" },
-            { jp: "360度回転撮影", en: "360-degree rotation shot" },
-            { jp: "クローズアップ足元", en: "Close-up on footsteps" }
+            { jp: "力強い腕振り", desc: "肩から動く腕", en: "Powerful arm swing" },
+            { jp: "肘の激しい前後", desc: "ピストン運動", en: "Pumping elbows back and forth" },
+            { jp: "指先まで意識", desc: "指先の繊細な表情", en: "Extended fingertips" },
+            { jp: "高い膝上げ", desc: "力強いもも上げ", en: "High knee lift" },
+            { jp: "力強い蹴り出し", desc: "足裏のパワー", en: "Powerful leg drive" },
+            { jp: "膝での衝撃吸収", desc: "柔らかな接地", en: "Soft landing absorption" },
+            { jp: "深い腰の回転", desc: "トルクのある捻り", en: "Deep hip rotation" },
+            { jp: "強い前傾姿勢", desc: "風に向かう姿勢", en: "Lean forward into the wind" },
+            { jp: "ブレない体幹", desc: "安定した軸の描写", en: "Stable core focus" },
+            { jp: "リズミカルな呼吸", desc: "肩の上下運動", en: "Rhythmic breathing" },
+            { jp: "鋭い視線の固定", desc: "獲物を追う瞳", en: "Intense focused gaze" },
+            { jp: "浮き出る筋肉", desc: "肉体の躍動感", en: "Defined muscle definition" },
+            { jp: "光る汗の飛散", desc: "散らばる水滴", en: "Scattering sweat droplets" },
+            { jp: "なびく髪の動き", desc: "風の流れを表現", en: "Flowing hair motion" },
+            { jp: "服のはためき", desc: "衣装のスピード感", en: "Flapping clothes" },
+            { jp: "血管の浮き出し", desc: "極限状態の筋肉", en: "Veins popping" },
+            { jp: "激しい顔の歪み", desc: "力の入った表情", en: "Facial expression of effort" },
+            { jp: "広がる胸部", desc: "深い吸気の状態", en: "Expanding chest" },
+            { jp: "足首の柔軟な返し", desc: "着地時の繊細さ", en: "Flexible ankle movement" },
+            { jp: "肩甲骨の動き", desc: "背中の筋肉の連動", en: "Scapular movement" }
+        ]
+    },
+    {
+        category: "6. カメラ・演出 (Camera)",
+        class: "cat-camera",
+        items: [
+            { jp: "ローアングル追従", desc: "下からの迫力", en: "Low angle tracking shot" },
+            { jp: "臨場感ある揺れ", desc: "手ブレ風の演出", en: "Dynamic camera shakes" },
+            { jp: "滑らかなスロー", desc: "高FPSの質感", en: "High frame rate feel" },
+            { jp: "360度回転撮影", desc: "全方位の迫力視点", en: "360-degree rotation shot" },
+            { jp: "足元クローズアップ", desc: "接地瞬間の強調", en: "Close-up on footsteps" },
+            { jp: "ドローン空撮風", desc: "広大な視点移動", en: "Cinematic drone shot" },
+            { jp: "一人称視点", desc: "没入感のあるカメラ", en: "First-person perspective" },
+            { jp: "ズームイン", desc: "対象への急速接近", en: "Fast zoom in" },
+            { jp: "サイドトラッキング", desc: "横並走での撮影", en: "Side tracking shot" },
+            { jp: "トップダウン俯瞰", desc: "真上からの構図", en: "Birds-eye view" },
+            { jp: "ダッチアングル", desc: "斜めの不安定的構図", en: "Dutch angle shot" },
+            { jp: "シネマティックライティング", desc: "劇的な光と影", en: "Cinematic lighting" },
+            { jp: "魚眼レンズ効果", desc: "歪んだ広角の迫力", en: "Fisheye lens effect" },
+            { jp: "ボケ味の強調", desc: "背景の美しいボケ", en: "Deep bokeh effect" },
+            { jp: "パン・レフト/ライト", desc: "左右のカメラ振り", en: "Panning shot" },
+            { jp: "チルトアップ/ダウン", desc: "上下のカメラ振り", en: "Tilting shot" },
+            { jp: "スローモーション開始", desc: "劇的な時間減速", en: "Start slow motion" },
+            { jp: "タイムラプス風", desc: "超高速の時間経過", en: "Time-lapse style" },
+            { jp: "逆再生風の動き", desc: "非現実的な演出", en: "Reverse motion feel" },
+            { jp: "ネオン・ライティング", desc: "夜のサイバー感", en: "Neon lighting effects" }
         ]
     }
 ];
 
 let selectedEn = new Set();
-let history = JSON.parse(localStorage.getItem('vHistoryPWA_NP') || '[]');
+let history = JSON.parse(localStorage.getItem('vHistoryFinal_V5') || '[]');
 
 function buildApp() {
     const container = document.getElementById('appBody');
     dictionary.forEach((cat) => {
         const div = document.createElement('div');
-        div.className = 'section';
+        div.className = `section ${cat.class}`;
         div.innerHTML = `
-            <details open>
+            <details>
                 <summary class="section-title">${cat.category}</summary>
                 <div class="tag-container">
                     ${cat.items.map(item => `
-                        <div class="tag" data-en="${item.en}" onclick="toggleItem(this)">${item.jp}</div>
+                        <div class="tag" data-en="${item.en}" onclick="toggleItem(this)">
+                            <span class="main-label">${item.jp}</span>
+                            <span class="sub-label">${item.desc}</span>
+                        </div>
                     `).join('')}
                 </div>
             </details>
@@ -370,15 +390,11 @@ function renderPreview() {
     const char = document.getElementById('charInput').value.trim();
     const orderedSelected = [];
     dictionary.forEach(cat => cat.items.forEach(i => { if(selectedEn.has(i.en)) orderedSelected.push(i.en); }));
-    
-    let tags = orderedSelected.join(', ');
+    const tags = orderedSelected.join(', ');
     let full = (char ? char + (tags ? ', ' : '') : '') + tags;
-    
-    // ネガティブプロンプトの連結
     if(document.getElementById('negToggle').checked) {
         full += "\n\n" + NEGATIVE_PROMPT;
     }
-    
     document.getElementById('preview').innerText = full || "項目を選択してください...";
 }
 
@@ -398,14 +414,14 @@ function copyPrompt() {
     const text = document.getElementById('preview').innerText;
     if (!text || text === "項目を選択してください...") return;
     navigator.clipboard.writeText(text).then(() => {
-        alert("コピー完了！人体保護プロンプトを適用しました。");
+        alert("コピー完了！演出を含めたプロンプトを適用しました。");
         saveToHistory(text);
     });
 }
 
 function saveToHistory(text) {
     history = [text, ...history.filter(t => t !== text)].slice(0, 5);
-    localStorage.setItem('vHistoryPWA_NP', JSON.stringify(history));
+    localStorage.setItem('vHistoryFinal_V5', JSON.stringify(history));
     updateHistory();
 }
 
@@ -421,7 +437,6 @@ function updateHistory() {
 
 function reuse(idx) {
     const text = history[idx];
-    // 再利用時はネガティブプロンプト部分を除去してセット（重複防止）
     const cleanText = text.split("### Negative Prompt ###")[0].trim();
     document.getElementById('charInput').value = cleanText;
     selectedEn.clear();
