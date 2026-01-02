@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Prompt Builder</title>
+    <title>Video Prompt Builder PWA</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-512.png">
     <meta name="theme-color" content="#3498db">
@@ -15,6 +15,7 @@
             --primary: #2c3e50;
             --accent: #3498db;
             --danger: #e74c3c;
+            --success: #27ae60;
             --bg: #f2f2f7;
             --card: #ffffff;
             --text: #333;
@@ -26,7 +27,7 @@
             color: var(--text);
             margin: 0;
             padding: 10px;
-            padding-bottom: 160px;
+            padding-bottom: 180px; /* フッター高さを考慮 */
         }
 
         .header {
@@ -68,6 +69,9 @@
             border-left: 4px solid var(--accent);
             padding-left: 8px;
             margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         textarea {
@@ -78,6 +82,20 @@
             font-size: 1rem;
             box-sizing: border-box;
             background: #fff;
+        }
+
+        /* ネガティブプロンプト用トグルスイッチ */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--danger);
+            background: #fff5f5;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #feb2b2;
+            margin-bottom: 10px;
         }
 
         .tag-container {
@@ -115,17 +133,17 @@
             left: 0;
             right: 0;
             background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
             padding: 12px;
             box-shadow: 0 -3px 15px rgba(0,0,0,0.1);
             z-index: 1000;
         }
 
         .preview {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #444;
             margin-bottom: 10px;
-            max-height: 50px;
+            max-height: 60px;
             overflow-y: auto;
             word-break: break-all;
             background: #fdfdfd;
@@ -166,16 +184,20 @@
 <body>
 
     <div class="header">
-        <h1>Prompt Builder</h1>
+        <h1>Prompt Builder + Body Protect</h1>
         <div class="control-btns">
             <button class="btn-small" onclick="toggleDetails(true)">展開</button>
             <button class="btn-small" onclick="toggleDetails(false)">格納</button>
         </div>
     </div>
 
-    <div class="section">
-        <div class="section-title">1. キャラクター & 基本動作</div>
-        <textarea id="charInput" rows="2" placeholder="例: Kaede-chan, sprinting..."></textarea>
+    <div class="section" style="padding: 10px;">
+        <label class="toggle-container">
+            <input type="checkbox" id="negToggle" checked onchange="renderPreview()">
+            <span>人体保護（ネガティブプロンプト自動挿入）</span>
+        </label>
+        <div class="section-title" style="border:none; padding:0; margin:0; font-size:0.8rem;">1. キャラクター & 基本動作</div>
+        <textarea id="charInput" rows="2" placeholder="例: Kaede-chan, sprinting on the track..."></textarea>
     </div>
 
     <div id="appBody"></div>
@@ -196,16 +218,15 @@
     </div>
 
 <script>
-// PWA Service Worker Registration
+// PWA Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(reg => {
-            console.log('SW registered');
-        }).catch(err => {
-            console.log('SW registration failed', err);
-        });
+        navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW OK')).catch(err => console.log('SW ERR'));
     });
 }
+
+// 人体保護用ネガティブプロンプト
+const NEGATIVE_PROMPT = "### Negative Prompt ###\ndeformed, extra limbs, bad anatomy, missing fingers, malformed hands, floating limbs, disconnected limbs, mutation, gross proportions, mutated hands, blurry, low quality, distorted body, unrealistic movement, glitch, morphing.";
 
 const dictionary = [
     {
@@ -311,7 +332,7 @@ const dictionary = [
 ];
 
 let selectedEn = new Set();
-let history = JSON.parse(localStorage.getItem('vHistoryPWA') || '[]');
+let history = JSON.parse(localStorage.getItem('vHistoryPWA_NP') || '[]');
 
 function buildApp() {
     const container = document.getElementById('appBody');
@@ -349,8 +370,15 @@ function renderPreview() {
     const char = document.getElementById('charInput').value.trim();
     const orderedSelected = [];
     dictionary.forEach(cat => cat.items.forEach(i => { if(selectedEn.has(i.en)) orderedSelected.push(i.en); }));
-    const tags = orderedSelected.join(', ');
-    const full = (char ? char + (tags ? ', ' : '') : '') + tags;
+    
+    let tags = orderedSelected.join(', ');
+    let full = (char ? char + (tags ? ', ' : '') : '') + tags;
+    
+    // ネガティブプロンプトの連結
+    if(document.getElementById('negToggle').checked) {
+        full += "\n\n" + NEGATIVE_PROMPT;
+    }
+    
     document.getElementById('preview').innerText = full || "項目を選択してください...";
 }
 
@@ -370,14 +398,14 @@ function copyPrompt() {
     const text = document.getElementById('preview').innerText;
     if (!text || text === "項目を選択してください...") return;
     navigator.clipboard.writeText(text).then(() => {
-        alert("コピー完了！");
+        alert("コピー完了！人体保護プロンプトを適用しました。");
         saveToHistory(text);
     });
 }
 
 function saveToHistory(text) {
     history = [text, ...history.filter(t => t !== text)].slice(0, 5);
-    localStorage.setItem('vHistoryPWA', JSON.stringify(history));
+    localStorage.setItem('vHistoryPWA_NP', JSON.stringify(history));
     updateHistory();
 }
 
@@ -393,7 +421,9 @@ function updateHistory() {
 
 function reuse(idx) {
     const text = history[idx];
-    document.getElementById('charInput').value = text;
+    // 再利用時はネガティブプロンプト部分を除去してセット（重複防止）
+    const cleanText = text.split("### Negative Prompt ###")[0].trim();
+    document.getElementById('charInput').value = cleanText;
     selectedEn.clear();
     document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
     renderPreview();
