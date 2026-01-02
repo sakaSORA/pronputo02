@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Video Prompt Builder</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --danger: #e74c3c;
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text: #333;
+        }
+
+        body {
+            font-family: -apple-system, "Helvetica Neue", "Hiragino Kaku Gothic ProN", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 160px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        h1 { font-size: 1rem; margin: 0; color: var(--primary); }
+
+        .control-btns {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            font-size: 0.75rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+        }
+
+        .section {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--primary);
+            border-left: 4px solid var(--accent);
+            padding-left: 8px;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        .tag-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px 4px;
+            font-size: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 46px;
+            transition: 0.2s;
+        }
+
+        .tag.selected {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            font-weight: bold;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            box-shadow: 0 -3px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .preview {
+            font-size: 0.8rem;
+            color: #444;
+            margin-bottom: 10px;
+            max-height: 50px;
+            overflow-y: auto;
+            word-break: break-all;
+            background: #fdfdfd;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px dashed var(--accent);
+        }
+
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 12px;
+        }
+
+        .btn-reset {
+            background: #fff;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .btn-main {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        details summary { font-size: 0.85rem; padding: 5px 0; outline: none; cursor: pointer; }
+        .history-item { font-size: 0.75rem; background: #e9e9eb; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-reuse { background: #7f8c8d; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Prompt Builder</h1>
+        <div class="control-btns">
+            <button class="btn-small" onclick="toggleDetails(true)">展開</button>
+            <button class="btn-small" onclick="toggleDetails(false)">格納</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">1. キャラクター & 基本動作</div>
+        <textarea id="charInput" rows="2" placeholder="例: Kaede-chan, sprinting..."></textarea>
+    </div>
+
+    <div id="appBody"></div>
+
+    <div class="section">
+        <details>
+            <summary>履歴 (最新5件)</summary>
+            <div id="historyList" style="margin-top:10px;"></div>
+        </details>
+    </div>
+
+    <div class="footer">
+        <div id="preview" class="preview">項目を選択してください...</div>
+        <div class="action-btns">
+            <button class="btn-reset" onclick="resetAll()">リセット</button>
+            <button class="btn-main" onclick="copyPrompt()">生成＆コピー</button>
+        </div>
+    </div>
+
+<script>
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            console.log('SW registered');
+        }).catch(err => {
+            console.log('SW registration failed', err);
+        });
+    });
+}
+
+const dictionary = [
+    {
+        category: "2. 速度と勢い (Speed & Momentum)",
+        items: [
+            { jp: "爆発的ダッシュ", en: "Explosive sprint" },
+            { jp: "超高速の疾走", en: "High-velocity dash" },
+            { jp: "音速に近い動き", en: "Supersonic movement" },
+            { jp: "光の残像", en: "Motion blur streaks" },
+            { jp: "風を切る動作", en: "Wind-cutting action" },
+            { jp: "全開の勢い", en: "Full throttle momentum" },
+            { jp: "動的な加速", en: "Dynamic acceleration" },
+            { jp: "瞬間的なスピード", en: "Burst of speed" },
+            { jp: "燃えるような速さ", en: "Blazing fast pace" },
+            { jp: "エネルギー放出", en: "Kinetic energy discharge" },
+            { jp: "空気抵抗抑制", en: "Aerodynamic posture" },
+            { jp: "画面を横切る疾走", en: "Sprinting through the frame" },
+            { jp: "追いかける残像", en: "Trailing afterimages" },
+            { jp: "高速の追跡", en: "High-speed pursuit" },
+            { jp: "土煙を上げる", en: "Dust-kicking takeoff" },
+            { jp: "背景が流れる", en: "Blurred background transition" },
+            { jp: "容赦ない前進", en: "Relentless forward drive" },
+            { jp: "一瞬でトップ速", en: "Instant velocity" },
+            { jp: "弾丸のような軌道", en: "Bullet-like trajectory" },
+            { jp: "激しいピッチ", en: "Rapid strides" }
+        ]
+    },
+    {
+        category: "3. キレ・反動・メリハリ (Sharpness)",
+        items: [
+            { jp: "ピタッと止まる", en: "Sharp snap-to-stop" },
+            { jp: "弾力のある反動", en: "Elastic recoil" },
+            { jp: "鞭のようなしなり", en: "Whip-like snapping" },
+            { jp: "キレのあるリズム", en: "Crisp and rhythmic" },
+            { jp: "バネの溜めと解放", en: "Spring-loaded tension" },
+            { jp: "重みのある着地", en: "Heavy impact landing" },
+            { jp: "無重力の軽やかさ", en: "Weightless floatation" },
+            { jp: "急激な方向転換", en: "Abrupt directional change" },
+            { jp: "活き活きした跳ね返り", en: "Vibrant bounce-back" },
+            { jp: "正確なストップ", en: "Pop-and-lock precision" },
+            { jp: "慣性による揺れ", en: "Inertia-driven sway" },
+            { jp: "ブレない体幹", en: "Rigid posture control" },
+            { jp: "流から静への転換", en: "Fluid to rigid transition" },
+            { jp: "反動を利用した動き", en: "Counter-movement" },
+            { jp: "優雅で機敏な動き", en: "Graceful agility" },
+            { jp: "力強いリバウンド", en: "Powerful rebound" },
+            { jp: "関節のキレ", en: "Snappy joint articulation" },
+            { jp: "意図的な重い足取り", en: "Deliberate heavy steps" },
+            { jp: "羽のような軽い足運び", en: "Feather-light footwork" },
+            { jp: "筋肉の収縮", en: "Tense muscle contraction" }
+        ]
+    },
+    {
+        category: "4. アクションと駆け引き (Action)",
+        items: [
+            { jp: "閃光の反射神経", en: "Flash-like reflexes" },
+            { jp: "電光石火の攻撃", en: "Lightning-fast jabs" },
+            { jp: "潜り込む回避", en: "Dodge and weave" },
+            { jp: "緩急(スロー〜倍速)", en: "Slow-motion to fast-forward" },
+            { jp: "無駄のない動き", en: "Tactical maneuver" },
+            { jp: "壁を蹴る加速", en: "Wall-kick propulsion" },
+            { jp: "空中姿勢制御", en: "Mid-air flip adjustment" },
+            { jp: "爆発的な跳躍", en: "Explosive vaulting" },
+            { jp: "シャドーのリズム", en: "Shadow-boxing rhythm" },
+            { jp: "完璧な回避", en: "Frame-perfect evasion" },
+            { jp: "連続攻撃", en: "Rapid-fire strikes" },
+            { jp: "流れる一連の動作", en: "Flow-state movement" },
+            { jp: "着地ロール移行", en: "Precise landing roll" },
+            { jp: "静止からの始動", en: "High-tension standoff" },
+            { jp: "予測不能フェイント", en: "Unpredictable feint" },
+            { jp: "障害物を越える", en: "Vaulting over obstacles" },
+            { jp: "勢いある登坂", en: "Climbing with momentum" },
+            { jp: "瞬発的な敏捷性", en: "Short-burst agility" },
+            { jp: "カウンター反応", en: "Reaction-based counter" },
+            { jp: "パルクールの流れ", en: "Dynamic parkour flow" }
+        ]
+    },
+    {
+        category: "5. 身体部位 & 演出 (Details & Camera)",
+        items: [
+            { jp: "力強い腕振り", en: "Powerful arm swing" },
+            { jp: "肘の激しい前後", en: "Pumping elbows back and forth" },
+            { jp: "指先まで意識", en: "Extended fingertips" },
+            { jp: "高い膝上げ", en: "High knee lift" },
+            { jp: "力強い蹴り出し", en: "Powerful leg drive" },
+            { jp: "膝での衝撃吸収", en: "Soft landing absorption" },
+            { jp: "深い腰の回転", en: "Deep hip rotation" },
+            { jp: "強い前傾姿勢", en: "Lean forward into the wind" },
+            { jp: "ブレない体幹の軸", en: "Stable core focus" },
+            { jp: "リズミカルな呼吸", en: "Rhythmic breathing" },
+            { jp: "鋭い視線の固定", en: "Intense focused gaze" },
+            { jp: "浮き出る筋肉のライン", en: "Defined muscle definition" },
+            { jp: "光る汗の飛散", en: "Scattering sweat droplets" },
+            { jp: "なびく髪の動き", en: "Flowing hair motion" },
+            { jp: "服のはためき", en: "Flapping clothes" },
+            { jp: "ローアングル追従", en: "Low angle tracking shot" },
+            { jp: "臨場感ある揺れ", en: "Dynamic camera shakes" },
+            { jp: "滑らかなスロー", en: "High frame rate feel" },
+            { jp: "360度回転撮影", en: "360-degree rotation shot" },
+            { jp: "クローズアップ足元", en: "Close-up on footsteps" }
+        ]
+    }
+];
+
+let selectedEn = new Set();
+let history = JSON.parse(localStorage.getItem('vHistoryPWA') || '[]');
+
+function buildApp() {
+    const container = document.getElementById('appBody');
+    dictionary.forEach((cat) => {
+        const div = document.createElement('div');
+        div.className = 'section';
+        div.innerHTML = `
+            <details open>
+                <summary class="section-title">${cat.category}</summary>
+                <div class="tag-container">
+                    ${cat.items.map(item => `
+                        <div class="tag" data-en="${item.en}" onclick="toggleItem(this)">${item.jp}</div>
+                    `).join('')}
+                </div>
+            </details>
+        `;
+        container.appendChild(div);
+    });
+    updateHistory();
+}
+
+function toggleItem(el) {
+    const enText = el.getAttribute('data-en');
+    if (selectedEn.has(enText)) {
+        selectedEn.delete(enText);
+        el.classList.remove('selected');
+    } else {
+        selectedEn.add(enText);
+        el.classList.add('selected');
+    }
+    renderPreview();
+}
+
+function renderPreview() {
+    const char = document.getElementById('charInput').value.trim();
+    const orderedSelected = [];
+    dictionary.forEach(cat => cat.items.forEach(i => { if(selectedEn.has(i.en)) orderedSelected.push(i.en); }));
+    const tags = orderedSelected.join(', ');
+    const full = (char ? char + (tags ? ', ' : '') : '') + tags;
+    document.getElementById('preview').innerText = full || "項目を選択してください...";
+}
+
+function toggleDetails(isOpen) {
+    document.querySelectorAll('details').forEach(d => d.open = isOpen);
+}
+
+function resetAll() {
+    if(!confirm("リセットしますか？")) return;
+    document.getElementById('charInput').value = "";
+    selectedEn.clear();
+    document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+    renderPreview();
+}
+
+function copyPrompt() {
+    const text = document.getElementById('preview').innerText;
+    if (!text || text === "項目を選択してください...") return;
+    navigator.clipboard.writeText(text).then(() => {
+        alert("コピー完了！");
+        saveToHistory(text);
+    });
+}
+
+function saveToHistory(text) {
+    history = [text, ...history.filter(t => t !== text)].slice(0, 5);
+    localStorage.setItem('vHistoryPWA', JSON.stringify(history));
+    updateHistory();
+}
+
+function updateHistory() {
+    const list = document.getElementById('historyList');
+    list.innerHTML = history.map((h, i) => `
+        <div class="history-item">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:10px;">${h}</span>
+            <button class="btn-reuse" onclick="reuse('${i}')">再利用</button>
+        </div>
+    `).join('') || '<div style="font-size:0.75rem; color:#999; text-align:center;">履歴なし</div>';
+}
+
+function reuse(idx) {
+    const text = history[idx];
+    document.getElementById('charInput').value = text;
+    selectedEn.clear();
+    document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+    renderPreview();
+}
+
+document.getElementById('charInput').addEventListener('input', renderPreview);
+buildApp();
+</script>
+</body>
+</html>

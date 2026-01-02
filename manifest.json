@@ -1,0 +1,17 @@
+{
+  "name": "Video Prompt Builder",
+  "short_name": "PromptGen",
+  "description": "動画生成AIのためのプロンプト作成辞書アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#3498db",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
